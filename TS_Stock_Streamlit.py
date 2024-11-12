@@ -3,45 +3,51 @@ import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 
-# Streamlit App Title
-st.title("Stock Price Forecasting App")
+def download_and_clean_data(ticker, years=10):
+    """
+    Downloads stock data from yfinance for the specified number of years,
+    cleans it, and converts it to a DataFrame.
 
-# Step 1: User Inputs Ticker
-st.sidebar.header("Input")
-user_ticker = st.sidebar.text_input("Enter the Stock Ticker:", "AAPL")
+    Args:
+        ticker (str): The stock ticker symbol.
+        years (int, optional): Number of years of data to download. Defaults to 10.
 
-if user_ticker:
+    Returns:
+        pd.DataFrame: Cleaned DataFrame containing stock data with Date as index.
+    """
+
     try:
-        # Step 2: Download Last 10 Years Data from yfinance
-        stock_data = yf.download(user_ticker, period="10y")  # Changed from "20y" to "10y"
-        if stock_data.empty:
-            st.write("No data available for the provided ticker. Please enter a valid ticker symbol.")
-        else:
-            # Step 3: Data Cleanup
-            stock_data = stock_data.loc[:, ~stock_data.columns.duplicated()]  # Remove duplicate columns if any
-            stock_data.reset_index(inplace=True)
-            stock_data['Date'] = pd.to_datetime(stock_data['Date'])  # Convert Date to datetime
-            stock_data.set_index('Date', inplace=True)
-            stock_data = stock_data[['Adj Close']]  # Use 'Adj Close' for plotting
-            stock_data.rename(columns={'Adj Close': 'Adj_Close'}, inplace=True)
-            stock_data.dropna(inplace=True)  # Remove any rows with missing values
-            stock_data = stock_data[~stock_data.index.duplicated(keep='first')]  # Remove duplicate indices
-            
-            st.write(f"Showing data for {user_ticker}")
-            st.write(stock_data.tail())
+        # Download data for the specified number of years
+        data = yf.download(ticker, period=f"{years}y")
 
-            # Plotting the Adjusted Close Price
-            st.line_chart(stock_data['Adj_Close'])
+        # Only keep the 'Adj Close' column
+        data = data[['Adj Close']]
 
-            # Plotting the Chart using Matplotlib
-            fig, ax = plt.subplots()
-            ax.plot(stock_data.index, stock_data['Adj_Close'], label='Adjusted Close Price', color='blue')
-            ax.set_title(f"{user_ticker} Stock Price - Adjusted Close")
-            ax.set_xlabel('Date')
-            ax.set_ylabel('Price')
-            ax.legend()
-            st.pyplot(fig)
+        # Rename 'Adj Close' to 'Price'
+        data = data.rename(columns={"Adj Close": "Price"})
+
+        # Keep 'Date' as the index and convert it to datetime
+        data.index = pd.to_datetime(data.index)
+
+        return data
+
     except Exception as e:
-        st.write(f"An error occurred: {e}")
-else:
-    st.write("Please enter a valid ticker symbol to proceed.")
+        st.error(f"An error occurred: {e}")
+        return None
+
+# Streamlit app
+st.title("Stock Price Viewer")
+
+# User input for the ticker symbol
+ticker_name = st.text_input("Enter the stock ticker symbol:")
+years = st.slider("Select number of years of data to download:", 1, 20, 10)
+
+if ticker_name:
+    df = download_and_clean_data(ticker_name, years)
+
+    # Plot the cleaned DataFrame
+    if df is not None:
+        st.line_chart(df, use_container_width=True)
+        st.write(df)
+    else:
+        st.write("No data available for the given ticker symbol.")
