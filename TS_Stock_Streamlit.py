@@ -28,14 +28,16 @@ if user_ticker:
             if forecast_method == "Simple Moving Average":
                 # Calculate Simple Moving Average (SMA)
                 stock_data["SMA"] = stock_data["Close"].rolling(window=window_size).mean()
+                stock_data = stock_data.dropna(subset=["SMA"])
                 st.write(f"Simple Moving Average with Window Size {window_size}")
-                st.line_chart(stock_data[["Close", "SMA"]])
+                st.line_chart(stock_data["Close"].combine_first(stock_data["SMA"].rename("SMA")))
 
             elif forecast_method == "Exponential Moving Average":
                 # Calculate Exponential Moving Average (EMA)
                 stock_data["EMA"] = stock_data["Close"].ewm(span=window_size, adjust=False).mean()
+                stock_data = stock_data.dropna(subset=["EMA"])
                 st.write(f"Exponential Moving Average with Span {window_size}")
-                st.line_chart(stock_data[["Close", "EMA"]])
+                st.line_chart(stock_data["Close"].combine_first(stock_data["EMA"].rename("EMA")))
 
             # Plotting the Chart
             fig, ax = plt.subplots()
