@@ -47,7 +47,7 @@ if ticker_name:
 
     # Plot the cleaned DataFrame
     if df is not None:
-        st.line_chart(df, use_container_width=True)
+        st.line_chart(df['Price'], use_container_width=True)
         st.write(df)
     else:
         st.write("No data available for the given ticker symbol.")
